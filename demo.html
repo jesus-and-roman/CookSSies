@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Démo — Bandeau de cookies</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0e0d0b; color: #eee; margin: 0; padding: 60px 24px; }
+  main { max-width: 700px; margin: 0 auto; }
+  h1 { font-size: 22px; }
+  code { background: #221f1b; padding: 2px 6px; border-radius: 4px; }
+  pre { background: #221f1b; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  button.reset { margin-top: 30px; padding: 8px 14px; cursor: pointer; }
+  #log { margin-top: 20px; font-size: 13px; color: #b7ada0; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>N'importe quel site HTML</h1>
+  <p>Le bandeau apparaît automatiquement en bas de la page tant que l'utilisateur n'a pas fait de choix (choix retenu 180 jours via cookie).</p>
+
+  <p>Intégration minimale — une seule ligne avant la fermeture de <code>&lt;/body&gt;</code> :</p>
+  <pre>&lt;script src="cookie-consent.js" defer&gt;&lt;/script&gt;</pre>
+
+  <p>Personnalisation optionnelle (couleurs, textes, durée du cookie) — à mettre AVANT le script :</p>
+  <pre>&lt;script&gt;
+  window.CookieConsentConfig = {
+    cookieDays: 365,
+    theme: { accent: "#4a90c9", bg: "#111" },
+    locale: { title: "Vos cookies, vos règles" }
+  };
+&lt;/script&gt;
+&lt;script src="cookie-consent.js" defer&gt;&lt;/script&gt;</pre>
+
+  <p>Écoute des choix pour activer/désactiver tes propres scripts (analytics, etc.) :</p>
+  <pre>window.addEventListener('cookieConsentUpdated', (e) => {
+  if (e.detail.analytics) {
+    // charger ton script analytics ici
+  }
+});</pre>
+
+  <button class="reset" onclick="document.cookie='site_cookie_consent=; Max-Age=0; path=/'; location.reload();">
+    Réinitialiser le consentement (revoir le bandeau)
+  </button>
+
+  <div id="log"></div>
+</main>
+
+<script>
+  window.addEventListener('cookieConsentUpdated', (e) => {
+    document.getElementById('log').textContent = 'Consentement reçu : ' + JSON.stringify(e.detail, null, 2);
+  });
+</script>
+<script src="cookie-consent.js" defer></script>
+</body>
+</html>
