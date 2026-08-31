@@ -256,35 +256,24 @@
     document.getElementById('log').textContent = JSON.stringify(e.detail, null, 2);
   });
 
-  // Affiche les events localement même sans Supabase
+  // Affiche les events en direct
   (function () {
     var list = [];
-    var originalFetch = window.fetch;
-    window.fetch = function () {
-      var args = arguments;
-      try {
-        if (args[0] && typeof args[0] === 'string' && (args[0].indexOf('analytics_events') !== -1 || args[0].indexOf('fake-analytics') !== -1)) {
-          var body = args[1] && args[1].body ? JSON.parse(args[1].body) : null;
-          if (body) {
-            list.unshift(body);
-            if (list.length > 10) list.pop();
-            document.getElementById('events').textContent = list.map(function (ev) {
-              var extra = '';
-              if (ev.data) {
-                if (ev.data.text) extra = ' → "' + ev.data.text + '"';
-                else if (ev.data.seconds) extra = ' → ' + ev.data.seconds + 's (scroll ' + (ev.data.maxScroll || 0) + '%)';
-                else if (ev.data.browser) extra = ' → ' + ev.data.browser + ' / ' + ev.data.os;
-              }
-              return new Date(ev.created_at).toLocaleTimeString() + '  [' + ev.event_type + ']' + extra;
-            }).join('\n');
-          }
+    window.addEventListener('trackerEvent', function (e) {
+      var ev = e.detail;
+      if (!ev) return;
+      list.unshift(ev);
+      if (list.length > 12) list.pop();
+      document.getElementById('events').textContent = list.map(function (item) {
+        var extra = '';
+        if (item.data) {
+          if (item.data.text) extra = ' → "' + item.data.text + '"';
+          else if (item.data.seconds != null) extra = ' → ' + item.data.seconds + 's (scroll ' + (item.data.maxScroll || 0) + '%)';
+          else if (item.data.browser) extra = ' → ' + item.data.browser + ' / ' + item.data.os + ' / ' + (item.data.viewport || '');
         }
-      } catch (err) {}
-      if (!window.TrackerConfig.supabaseUrl) {
-        return Promise.resolve({ ok: true });
-      }
-      return originalFetch.apply(this, args);
-    };
+        return new Date(item.created_at).toLocaleTimeString() + '  [' + item.event_type + ']' + extra;
+      }).join('\n');
+    });
   })();
 </script>
 
