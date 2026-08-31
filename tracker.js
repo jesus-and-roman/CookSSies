@@ -46,11 +46,14 @@
   }
 
   function getDeviceInfo() {
-    var ua = navigator.userAgent;
+    var ua = navigator.userAgent || "";
     var platform = navigator.platform || "";
     var lang = navigator.language || navigator.userLanguage || "";
+    var languages = navigator.languages ? navigator.languages.join(",") : lang;
     var screenW = window.screen ? window.screen.width : 0;
     var screenH = window.screen ? window.screen.height : 0;
+    var availW = window.screen ? window.screen.availWidth : 0;
+    var availH = window.screen ? window.screen.availHeight : 0;
     var dpr = window.devicePixelRatio || 1;
     var tz = "";
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
@@ -72,15 +75,43 @@
     var deviceType = /mobi|android|iphone|ipad|ipod/i.test(ua) ? "mobile" : "desktop";
     if (/ipad|tablet/i.test(ua)) deviceType = "tablet";
 
+    // Connexion réseau (si dispo)
+    var connection = null;
+    if (navigator.connection) {
+      connection = {
+        effectiveType: navigator.connection.effectiveType || null,
+        downlink: navigator.connection.downlink || null,
+        rtt: navigator.connection.rtt || null,
+        saveData: navigator.connection.saveData || false
+      };
+    }
+
+    // Préférences
+    var prefersDark = false;
+    try {
+      prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    } catch (e) {}
+
     return {
       browser: browser,
       os: os,
       deviceType: deviceType,
       language: lang,
+      languages: languages,
       timezone: tz,
       screen: screenW + "x" + screenH,
+      availScreen: availW + "x" + availH,
+      viewport: window.innerWidth + "x" + window.innerHeight,
       dpr: dpr,
-      platform: platform
+      platform: platform,
+      hardwareConcurrency: navigator.hardwareConcurrency || null,
+      maxTouchPoints: navigator.maxTouchPoints || 0,
+      cookieEnabled: navigator.cookieEnabled,
+      doNotTrack: navigator.doNotTrack || window.doNotTrack || null,
+      online: navigator.onLine,
+      prefersDark: prefersDark,
+      connection: connection,
+      pdfViewer: navigator.pdfViewerEnabled || null
     };
   }
 
@@ -124,9 +155,19 @@
   }
 
   function trackPageView() {
-    sendEvent("pageview", {
-      loadTime: performance && performance.timing ? (performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart) : null
-    });
+    var perf = {};
+    if (performance && performance.timing) {
+      var t = performance.timing;
+      perf.loadTime = t.domContentLoadedEventEnd - t.navigationStart;
+      perf.domReady = t.domContentLoadedEventEnd - t.navigationStart;
+      perf.redirectTime = t.redirectEnd - t.redirectStart;
+      perf.dnsTime = t.domainLookupEnd - t.domainLookupStart;
+    }
+    if (performance && performance.memory) {
+      perf.jsHeapSizeLimit = performance.memory.jsHeapSizeLimit || null;
+      perf.usedJSHeapSize = performance.memory.usedJSHeapSize || null;
+    }
+    sendEvent("pageview", perf);
   }
 
   function trackTimeOnPage() {
